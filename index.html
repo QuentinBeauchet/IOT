@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Leaflet for ESPs</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <link rel="icon" href="data:,">
+
+    <!-- HighCharts + JQuerry -->
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+    <script src="https://code.highcharts.com/modules/export-data.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+    <!-- Leafet -->
+    <script
+      src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+      integrity="sha384-RFZC58YeKApoNsIbBxf4z6JJXmh+geBSgkCQXFyh+4tiFSJmJBt+2FbjxW7Ar16M"
+      crossorigin="anonymous"
+    ></script>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+      integrity="sha384-VzLXTJGPSyTLX6d96AxgkKvE/LRb7ECGyTxuwtpjHnVWVZs2gp5RDjeM/tgBnVdM"
+      crossorigin="anonymous"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.4.1/leaflet.markercluster.js"></script>
+	  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.4.1/MarkerCluster.css" />
+  	<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.0/MarkerCluster.Default.min.css" />
+
+    <!-- Mes fichiers -->
+    <script type="text/javascript" src="page.js" defer></script>
+    <script type="text/javascript" src="maps/map.js" defer></script>
+    <script type="text/javascript" src="maps/markers.js" defer></script>
+    <script type="text/javascript" src="charts/charts.js" defer></script>
+	  <link rel="stylesheet" href="style.css"/>
+  </head>
+
+  <body>
+    <div class="tab">
+      <button class="tablinks" onclick="changeTab(event, 'map')">Map</button>
+      <button class="tablinks" onclick="changeTab(event, 'temperature')">
+        Temperature
+      </button>
+      <button class="tablinks" onclick="changeTab(event, 'luminosite')">
+        Luminosité
+      </button>
+    </div>
+
+    <div id="map" class="tabcontent"></div>
+    <div id="temperature" class="tabcontent"></div>
+    <div id="luminosite" class="tabcontent"></div>
+    </div>
+  </body>
+</html>
