@@ -1,5 +1,5 @@
 // Inialisaiton des Tableaux de temperature et de luminosité.
-function initCharts() {
+function initCharts(Esps) {
   Highcharts.setOptions({
     global: {
       useUTC: false,
@@ -10,7 +10,7 @@ function initCharts() {
 
   chart1 = new Highcharts.Chart({
     title: { text: "Temperatures" },
-    subtitle: { text: "Irregular time data in Highcharts JS" },
+    subtitle: { text: "Temperature des Esp32 de la flotte" },
     legend: { enabled: true },
     credits: false,
     chart: { renderTo: "temperature" },
@@ -28,7 +28,8 @@ function initCharts() {
   });
 
   chart2 = new Highcharts.Chart({
-    title: { text: "Lights" },
+    title: { text: "Luminosité" },
+    subtitle: { text: "Luminosité des Esp32 de la flotte" },
     legend: { enabled: true },
     credits: false,
     chart: { renderTo: "luminosite" },
@@ -49,20 +50,29 @@ function initCharts() {
 }
 
 // Initilalisation du rafraichissemnt des requetes GET des données.
-function initEspRefresh() {
+function initEspRefresh(Esps, chart1, chart2) {
   for (var i = 0; i < Esps.length; i++) {
     let esp = Esps[i];
+
     get_samples("/esp/temp", chart1.series[i], esp);
     window.setInterval(
-      () => get_samples("/esp/temp", chart1.series[i], esp),
-      refreshT
+      get_samples,
+      refreshT,
+      "/esp/temp",
+      chart1.series[i],
+      esp
     );
 
     get_samples("/esp/light", chart2.series[i], esp);
     window.setInterval(
-      () => get_samples("/esp/light", chart2.series[i], esp),
-      refreshT
+      get_samples,
+      refreshT,
+      "/esp/light",
+      chart2.series[i],
+      esp
     );
+
+    addEspMarker(esp);
   }
 }
 
@@ -73,21 +83,20 @@ function get_samples(path_on_node, serie, esp) {
     type: "GET",
     headers: { Accept: "application/json" },
     data: { who: esp },
-    success: function (resultat, statut) {
-      let listeData = [];
-      resultat.forEach(function (element) {
-        listeData.push([Date.parse(element.date), element.value]);
-      });
-      serie.setData(listeData);
-    },
-    error: function (resultat, statut, erreur) {
-      console.log(resultat, statut, erreur);
-    },
-    complete: function (resultat, statut) {},
+  }).done((resultat) => {
+    let listeData = [];
+    resultat.forEach(function (element) {
+      listeData.push([Date.parse(element.date), element.value]);
+    });
+    serie.setData(listeData);
   });
 }
 
+const node_url = "http://192.168.0.135:5500";
 const refreshT = 10000;
-var Esps = ["Paul", "80:7D:3A:FD:E8:48", "Marc", "Lola"];
-var { chart1, chart2 } = initCharts();
-initEspRefresh();
+// Recupere la liste des esp depuis le serveur.
+getRequest("/esp/client").done((res) => {
+  var Esps = res;
+  var { chart1, chart2 } = initCharts(Esps);
+  initEspRefresh(Esps, chart1, chart2);
+});

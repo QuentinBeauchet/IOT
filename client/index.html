@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Leaflet for ESPs</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <link rel="icon" href="data:," />
+
+    <!-- HighCharts + JQuerry -->
+    <script src="https://code.highcharts.com/highcharts.js"></script>
+    <script src="https://code.highcharts.com/modules/exporting.js"></script>
+    <script src="https://code.highcharts.com/modules/export-data.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+
+    <!-- Leafet -->
+    <script
+      src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+      integrity="sha384-RFZC58YeKApoNsIbBxf4z6JJXmh+geBSgkCQXFyh+4tiFSJmJBt+2FbjxW7Ar16M"
+      crossorigin="anonymous"
+    ></script>
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+      integrity="sha384-VzLXTJGPSyTLX6d96AxgkKvE/LRb7ECGyTxuwtpjHnVWVZs2gp5RDjeM/tgBnVdM"
+      crossorigin="anonymous"
+    />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.4.1/leaflet.markercluster.js"></script>
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.4.1/MarkerCluster.css"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/leaflet.markercluster/1.5.0/MarkerCluster.Default.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@6/turf.min.js"></script>
+
+    <!-- Mes fichiers -->
+    <script type="text/javascript" src="client/main.js" defer></script>
+    <script type="text/javascript" src="client/maps/map.js" defer></script>
+    <script type="text/javascript" src="client/maps/markers.js" defer></script>
+    <script type="text/javascript" src="client/charts/charts.js" defer></script>
+    <link rel="stylesheet" href="client/style.css" />
+  </head>
+
+  <body>
+    <section id="infos">
+      <h1>Informations sur les Esps</h1>
+      <article>
+        Cette page permet de voir en temps réel les temperatures dans les 3000
+        villes les plus peulplés au monde.
+      </article>
+      <article>
+        Il est possible de rajouter des villes sur la carte pour connaitre leurs
+        temperatures puis de les supprimer si l'on change d'avis. Celles ci sont
+        automatiquement sauvegarder dans le cache.
+      </article>
+      <article>
+        Elle permet aussi de gerer une flotte d'esps, ceux ci envoient leurs
+        données au serveur graçe a des publications mqtt au topic
+        <i><b>client</b></i> pour s'indentifier puis
+        <i><b>sensors/temp</b></i> et <i><b>sensors/light</b></i> pour mettre a
+        jour leurs valeurs qui sont alors visibles dans les graphiques de
+        Temperatures et de Luminosité.
+      </article>
+    </section>
+
+    <section id="cityAdd">
+      <label for="cityAddInput">Ajouter une ville a la carte:</label>
+      <form onsubmit="onFormSubmit();return false;">
+        <input type="search" id="cityAddInput" name="cityName" required />
+        <input type="submit" id="cityAddSubmit" value="&#x2714;" />
+      </form>
+      <span id="cityError"></span>
+    </section>
+
+    <section class="tab">
+      <button class="tablinks" onclick="changeTab(event, 'map')">Map</button>
+      <button class="tablinks" onclick="changeTab(event, 'temperature')">
+        Temperatures
+      </button>
+      <button class="tablinks" onclick="changeTab(event, 'luminosite')">
+        Luminosité
+      </button>
+    </section>
+
+    <div id="map" class="tabcontent"></div>
+    <div id="temperature" class="tabcontent"></div>
+    <div id="luminosite" class="tabcontent"></div>
+
+    <section id="cityList"></section>
+  </body>
+</html>

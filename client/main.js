@@ -1,5 +1,3 @@
-const node_url = "http://192.168.0.135:5501";
-
 // Change l'onglet du menu.
 function changeTab(evt, tabId) {
   let i, tabcontent, tablinks;
@@ -28,5 +26,20 @@ function initTab() {
     tabcontent[i].style.display = "none";
   }
 }
+
+// InnerHtml du popUp des markers.
+function popUpHtml(marker) {
+  return `<h2>${
+    marker.options.city || marker.options.name
+  }</h2><h3>Temperature: ${marker.options.temp}°C</h3>${
+    marker.options.light
+      ? `<h3>Luminosité: ${marker.options.light} lumens</h3>`
+      : ""
+  }<b>${marker.options.country || ""}</b>`;
+}
+
+// Html d'un article de la liste des villes.
+const articleHtml = (city) =>
+  `<article class="cityListElement" id="cityListElement_${city}">${city}<button onclick="removeCityMarker('${city}')">&#10006;</button></article>`;
 
 initTab();

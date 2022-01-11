@@ -7,12 +7,12 @@ import { MongoClient } from "mongodb";
 import express from "express";
 import bodyParser from "body-parser";
 const { urlencoded, json } = bodyParser;
-import geoip from "geoip-lite";
 import fetch from "node-fetch";
 
 // Topics MQTT
 const TOPIC_LIGHT = "sensors/light";
 const TOPIC_TEMP = "sensors/temp";
+const TOPIC_CLIENT = "client";
 
 var dbo;
 
@@ -46,18 +46,17 @@ async function main() {
 
     dbo = mg_client.db(mongoName);
 
-    // Remove "old collections : temp and light
-    dbo.listCollections({ name: "temp" }).next(function (err, collinfo) {
-      if (collinfo) {
-        dbo.collection("temp").drop();
-      }
-    });
+    // Remove "old collections
+    const resetCollection = (collection) =>
+      dbo.listCollections({ name: collection }).next(function (err, collinfo) {
+        if (collinfo) {
+          dbo.collection(collection).drop();
+        }
+      });
 
-    dbo.listCollections({ name: "light" }).next(function (err, collinfo) {
-      if (collinfo) {
-        dbo.collection("light").drop();
-      }
-    });
+    resetCollection("temp");
+    resetCollection("light");
+    resetCollection("client");
 
     // Connexion au broker MQTT distant
     const mqtt_url = "http://test.mosquitto.org:1883";
@@ -65,22 +64,24 @@ async function main() {
 
     // Des la connexion, le serveur NodeJS s'abonne aux topics MQTT
     client_mqtt.on("connect", function () {
-      client_mqtt.subscribe(TOPIC_LIGHT, function (err) {
-        if (!err) {
-          console.log("Node Server has subscribed to ", TOPIC_LIGHT);
-        }
-      });
-      client_mqtt.subscribe(TOPIC_TEMP, function (err) {
-        if (!err) {
-          console.log("Node Server has subscribed to ", TOPIC_TEMP);
-        }
-      });
+      const subTopic = (topic) =>
+        client_mqtt.subscribe(topic, function (err) {
+          if (!err) {
+            console.log("Node Server has subscribed to ", topic);
+          }
+        });
+
+      subTopic(TOPIC_TEMP);
+      subTopic(TOPIC_LIGHT);
+      subTopic(TOPIC_CLIENT);
     });
 
     // Callback de la reception des messages MQTT
     client_mqtt.on("message", function (topic, message) {
-      console.log("\nMQTT msg on topic : ", topic.toString());
+      console.log("------------------------------------");
+      console.log("MQTT msg on topic : ", topic.toString());
       console.log("Msg payload : ", message.toString());
+      console.log("------------------------------------");
 
       // Parsing du message recu au format JSON
       message = JSON.parse(message);
@@ -89,20 +90,14 @@ async function main() {
           timeZone: "Europe/Paris",
         }),
         who: message.who,
-        value: message.value,
       };
+      if (topic != TOPIC_CLIENT) {
+        new_entry.value = message.value;
+      }
 
       // Ecriture dans la base de données MongoDB
       var key = parse(topic.toString()).base;
-      dbo.collection(key).insertOne(new_entry, function (err, res) {
-        if (err) throw err;
-        console.log(
-          "\nItem : ",
-          new_entry,
-          "\ninserted in db in collection :",
-          key
-        );
-      });
+      dbo.collection(key).insertOne(new_entry);
     });
 
     // Fermeture de la connexion avec la DB lorsque le NodeJS se termine.
@@ -142,7 +137,7 @@ app.use(function (request, response, next) {
 //================================================================
 
 app.get("/", function (req, res) {
-  res.sendFile(join(__dirname + "/index.html"));
+  res.sendFile(join(__dirname + "/client/index.html"));
 });
 
 // Request to esp/light or esp/temp.
@@ -153,39 +148,48 @@ app.get("/esp/:what", function (req, res) {
     }),
     who: req.query.who,
     what: req.params.what,
-    ip: req.ip,
     originalUrl: req.originalUrl,
   };
   console.log("\nNew Request:", new_request);
-  //console.log(req.headers["x-forwarded-for"], req.socket.remoteAddress);
-
-  var geo = geoip.lookup("88.169.220.78");
-
-  //console.log(geo);
-
-  if (new_request.what != "light" && new_request.what != "temp") {
-    res.sendStatus(404);
-  }
 
   // Recupere les informations de la base de données MongoDB.
-  dbo
-    .collection(new_request.what)
-    .find({ who: new_request.who })
-    .sort({ _id: -1 })
-    .limit(200)
-    .toArray()
-    .then((arr) => res.json(arr));
+  if (new_request.what == "light" || new_request.what == "temp") {
+    dbo
+      .collection(new_request.what)
+      .find({ who: new_request.who })
+      .sort({ _id: -1 })
+      .limit(200)
+      .toArray()
+      .then((arr) => res.json(arr));
+  } else if (new_request.what == "client") {
+    dbo
+      .collection(new_request.what)
+      .distinct("who")
+      .then((list) => res.json(list));
+  } else {
+    res.sendStatus(404);
+  }
 });
 
 // Request the API call of a city temperature.
-app.get("/city/:what", function (req, res) {
+app.get("/city", function (req, res) {
   fetch(
-    `https://api.openweathermap.org/data/2.5/weather?q=${req.params.what}&appid=${process.env.openWeatherAPIKey}&units=metric`
+    `https://api.openweathermap.org/data/2.5/weather?q=${req.query.cityName}&appid=${process.env.openWeatherAPIKey}&units=metric`
   )
     .then((response) => response.json())
     .catch(() => res.json({ temp: "?" }))
     .then((json) =>
-      res.json({ temp: json.cod == "404" ? "?" : json.main.temp })
+      res.json(
+        json.cod == "200"
+          ? {
+              name: json.name,
+              lat: json.coord.lat,
+              long: json.coord.lon,
+              temp: json.main.temp,
+              country: json.sys.country,
+            }
+          : {}
+      )
     );
 });
 
@@ -193,8 +197,6 @@ app.get("/city/:what", function (req, res) {
 //==== Demarrage du serveur Web  =======================
 //================================================================
 
-var listener = app
-  .set("trust proxy", true)
-  .listen(process.env.PORT || 5501, function () {
-    console.log("Express Listening on port " + listener.address().port);
-  });
+var listener = app.set("trust proxy", true).listen(5500, function () {
+  console.log("Express Listening on port ", listener.address().port);
+});
