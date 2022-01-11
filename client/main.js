@@ -1,3 +1,5 @@
+const node_url = "https://iot-esp-lucioles.herokuapp.com/"; //"http://192.168.0.135:5500";
+
 // Change l'onglet du menu.
 function changeTab(evt, tabId) {
   let i, tabcontent, tablinks;
