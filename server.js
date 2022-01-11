@@ -197,6 +197,8 @@ app.get("/city", function (req, res) {
 //==== Demarrage du serveur Web  =======================
 //================================================================
 
-var listener = app.set("trust proxy", true).listen(5500, function () {
-  console.log("Express Listening on port ", listener.address().port);
-});
+var listener = app
+  .set("trust proxy", true)
+  .listen(process.env.PORT || 5500, () =>
+    console.log("Express Listening on port ", listener.address().port)
+  );
