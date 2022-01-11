@@ -92,7 +92,7 @@ function get_samples(path_on_node, serie, esp) {
   });
 }
 
-const node_url = "http://192.168.0.135:5500";
+const node_url = "https://iot-esp-lucioles.herokuapp.com/"; //"http://192.168.0.135:5500";
 const refreshT = 10000;
 // Recupere la liste des esp depuis le serveur.
 getRequest("/esp/client").done((res) => {
