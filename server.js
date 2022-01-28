@@ -8,11 +8,13 @@ import express from "express";
 import bodyParser from "body-parser";
 const { urlencoded, json } = bodyParser;
 import fetch from "node-fetch";
+import fs from "fs";
+import bbox from "@turf/bbox";
+import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
+import { point } from "@turf/helpers";
 
 // Topics MQTT
-const TOPIC_LIGHT = "sensors/light";
-const TOPIC_TEMP = "sensors/temp";
-const TOPIC_CLIENT = "client";
+const TOPIC_DATA = "iot/M1_2021/temp";
 
 var dbo;
 
@@ -46,17 +48,12 @@ async function main() {
 
     dbo = mg_client.db(mongoName);
 
-    // Remove "old collections
-    const resetCollection = (collection) =>
-      dbo.listCollections({ name: collection }).next(function (err, collinfo) {
-        if (collinfo) {
-          dbo.collection(collection).drop();
-        }
-      });
-
-    resetCollection("temp");
-    resetCollection("light");
-    resetCollection("client");
+    // Remove data older than 7 days
+    dbo.collection("data").deleteMany({
+      date: {
+        $lt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+      },
+    });
 
     // Connexion au broker MQTT distant
     const mqtt_url = "http://test.mosquitto.org:1883";
@@ -71,9 +68,7 @@ async function main() {
           }
         });
 
-      subTopic(TOPIC_TEMP);
-      subTopic(TOPIC_LIGHT);
-      subTopic(TOPIC_CLIENT);
+      subTopic(TOPIC_DATA);
     });
 
     // Callback de la reception des messages MQTT
@@ -84,20 +79,24 @@ async function main() {
       console.log("------------------------------------");
 
       // Parsing du message recu au format JSON
-      message = JSON.parse(message);
-      var new_entry = {
-        date: new Date().toLocaleString("fr-FR", {
-          timeZone: "Europe/Paris",
-        }),
-        who: message.who,
-      };
-      if (topic != TOPIC_CLIENT) {
-        new_entry.value = message.value;
-      }
+      try {
+        message = JSON.parse(message);
+        var new_entry = {
+          date: Date.now(),
+          who: message.who,
+          temp: message.temp,
+          light: message.light,
+          localisation: {
+            lat: message.lat,
+            long: message.long,
+          },
+        };
 
-      // Ecriture dans la base de données MongoDB
-      var key = parse(topic.toString()).base;
-      dbo.collection(key).insertOne(new_entry);
+        // Ecriture dans la base de données MongoDB
+        dbo.collection("data").insertOne(new_entry);
+      } catch {
+        console.error("Le message n'est pas un json");
+      }
     });
 
     // Fermeture de la connexion avec la DB lorsque le NodeJS se termine.
@@ -141,34 +140,37 @@ app.get("/", function (req, res) {
 });
 
 // Request to esp/light or esp/temp.
-app.get("/esp/:what", function (req, res) {
-  var new_request = {
-    date: new Date().toLocaleString("fr-FR", {
-      timeZone: "Europe/Paris",
-    }),
-    who: req.query.who,
-    what: req.params.what,
-    originalUrl: req.originalUrl,
-  };
-  console.log("\nNew Request:", new_request);
+app.get("/esp/data", function (req, res) {
+  showRequest(req);
 
   // Recupere les informations de la base de données MongoDB.
-  if (new_request.what == "light" || new_request.what == "temp") {
-    dbo
-      .collection(new_request.what)
-      .find({ who: new_request.who })
-      .sort({ _id: -1 })
-      .limit(200)
-      .toArray()
-      .then((arr) => res.json(arr));
-  } else if (new_request.what == "client") {
-    dbo
-      .collection(new_request.what)
-      .distinct("who")
-      .then((list) => res.json(list));
-  } else {
-    res.sendStatus(404);
-  }
+  dbo
+    .collection("data")
+    .find({ who: req.query.who })
+    .sort({ _id: -1 })
+    .limit(200)
+    .toArray()
+    .then((arr) => res.json(arr));
+});
+
+// Request to /esps to get latests data of each esp
+app.get("/esps", function (req, res) {
+  showRequest(req);
+
+  dbo
+    .collection("data")
+    .distinct("who")
+    .then((list) => {
+      Promise.all(
+        list.map((esp) =>
+          dbo
+            .collection("data")
+            .findOne({ who: esp }, { sort: { $natural: -1 } })
+        )
+      ).then((values) => {
+        return res.json(values);
+      });
+    });
 });
 
 // Request the API call of a city temperature.
@@ -192,6 +194,59 @@ app.get("/city", function (req, res) {
       )
     );
 });
+
+app.get("/admin", function (req, res) {
+  if (
+    req.query.username == process.env.MONGOUSERNAME &&
+    req.query.password == process.env.MONGOPASSWORD
+  ) {
+    dbo.listCollections({ name: "data" }).next(function (err, collinfo) {
+      if (collinfo) {
+        dbo.collection("data").drop();
+      }
+    });
+    console.log(`Admin ${req.query.username} is connected !`);
+    res.sendStatus(200);
+  } else {
+    res.sendStatus(403);
+  }
+});
+
+var geoJson;
+fs.readFile("client/maps/grassePoly.json", (err, data) => {
+  let json = JSON.parse(data);
+  geoJson = json;
+});
+
+app.get("/random/localisation", function (req, res) {
+  let box = bbox(geoJson);
+  var newLoc = () => {
+    return {
+      lat: box[1] + Math.random() * (box[3] - box[1]),
+      long: box[0] + Math.random() * (box[2] - box[0]),
+    };
+  };
+  var loc = newLoc();
+  while (!booleanPointInPolygon(point([loc.long, loc.lat]), geoJson)) {
+    loc = newLoc();
+  }
+  res.json(loc);
+});
+
+app.get("*", function (req, res) {
+  res.status(404).send('<h1 style="text-align: center;">Page Not Found</h1>');
+});
+
+function showRequest(req) {
+  var new_request = {
+    date: new Date().toLocaleString("fr-FR", {
+      timeZone: "Europe/Paris",
+    }),
+    who: req.query.who,
+    originalUrl: req.originalUrl,
+  };
+  console.log("\nNew Request:", new_request);
+}
 
 //================================================================
 //==== Demarrage du serveur Web  =======================

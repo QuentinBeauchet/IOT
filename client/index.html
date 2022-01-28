@@ -45,23 +45,47 @@
   <body>
     <section id="infos">
       <h1>Informations sur les Esps</h1>
-      <article>
-        Cette page permet de voir en temps réel les temperatures dans les 3000
-        villes les plus peulplés au monde.
-      </article>
-      <article>
-        Il est possible de rajouter des villes sur la carte pour connaitre leurs
-        temperatures puis de les supprimer si l'on change d'avis. Celles ci sont
-        automatiquement sauvegarder dans le cache.
-      </article>
-      <article>
-        Elle permet aussi de gerer une flotte d'esps, ceux ci envoient leurs
-        données au serveur graçe a des publications mqtt au topic
-        <i><b>client</b></i> pour s'indentifier puis
-        <i><b>sensors/temp</b></i> et <i><b>sensors/light</b></i> pour mettre a
-        jour leurs valeurs qui sont alors visibles dans les graphiques de
-        Temperatures et de Luminosité.
-      </article>
+      <div id="text_admin">
+        <div id="text">
+          <article>
+            Cette page permet de voir en temps réel les temperatures dans les
+            3000 villes les plus peulplés au monde.
+          </article>
+          <article>
+            Il est possible de rajouter des villes sur la carte pour connaitre
+            leurs temperatures puis de les supprimer si l'on change d'avis.
+            Celles ci sont automatiquement sauvegarder dans le cache.
+          </article>
+          <article>
+            Elle permet aussi de gerer une flotte d'esps, ceux ci envoient leurs
+            données au serveur graçe a des publications mqtt au topic
+            <i><b>client</b></i> pour s'indentifier puis
+            <i><b>sensors/temp</b></i> et <i><b>sensors/light</b></i> pour
+            mettre a jour leurs valeurs qui sont alors visibles dans les
+            graphiques de Temperatures et de Luminosité.
+          </article>
+        </div>
+        <div id="admin">
+          <h3>ADMIN</h3>
+          <form action="/admin" method="get" id="adminForm">
+            <input
+              type="text"
+              id="adminConnexionUsername"
+              name="username"
+              placeholder="username"
+              required
+            />
+            <input
+              type="password"
+              id="adminConnexionPassword"
+              name="password"
+              placeholder="password"
+              required
+            />
+            <input type="submit" id="adminConnexionSubmit" value="Connect" />
+          </form>
+        </div>
+      </div>
     </section>
 
     <section id="cityAdd">

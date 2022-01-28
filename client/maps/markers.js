@@ -85,18 +85,13 @@ function onFormSubmit() {
 
 // Recupere depuis le serveur la temperature et la luminosité d'un esp lorsqu'on clique sur son marker.
 function onEspMarkerClick(event) {
-  getRequest(`/esp/temp?who=${event.sourceTarget.options.name}`).done(
+  getRequest(`/esp/data?who=${event.sourceTarget.options.name}`).done(
     (resultat) => {
       if (resultat.length != 0) {
-        event.sourceTarget.options.temp = resultat[0].value;
-        event.sourceTarget.setPopupContent(popUpHtml(event.sourceTarget));
-      }
-    }
-  );
-  getRequest(`/esp/light?who=${event.sourceTarget.options.name}`).done(
-    (resultat) => {
-      if (resultat.length != 0) {
-        event.sourceTarget.options.light = resultat[0].value;
+        event.sourceTarget.options.temp =
+          resultat[0].temp || event.sourceTarget.options.temp;
+        event.sourceTarget.options.light =
+          resultat[0].light || event.sourceTarget.options.light;
         event.sourceTarget.setPopupContent(popUpHtml(event.sourceTarget));
       }
     }
@@ -105,16 +100,40 @@ function onEspMarkerClick(event) {
 
 // Ajoute l'esp en tant que marker sur la map si celui ci a des coordonnées gps.
 function addEspMarker(esp) {
-  getRandomLoc().then((loc) => {
-    var marker = L.marker([loc.lat, loc.long], {
+  try {
+    var marker = L.marker([esp.localisation.lat, esp.localisation.long], {
       icon: espIcon,
-      name: esp,
+      name: esp.who,
       temp: "?",
       light: "?",
     });
     marker.bindPopup(popUpHtml(marker)).on("click", onEspMarkerClick);
     markers.addLayer(marker);
-  });
+  } catch {
+    console.error(
+      `L'esp ${esp.who} envoit des valeurs de latitude et longitude incorrectes.`
+    );
+  }
+
+  window.setInterval(
+    () =>
+      getRequest(`/esp/data?who=${esp.who}`).done((res) => {
+        let data = res.shift();
+        try {
+          marker.setLatLng(
+            new L.LatLng(
+              data.localisation.lat || marker._latlng.lat,
+              data.localisation.long || marker._latlng.long
+            )
+          );
+        } catch {
+          console.error(
+            `L'esp ${esp.who} envoit des valeurs de latitude et longitude incorrectes.`
+          );
+        }
+      }),
+    refreshT
+  );
 }
 
 // Ajoute la ville en tant que marker sur la map.

@@ -104,6 +104,10 @@ h1 {
   font-size: 0.8rem;
 }
 
+#cityList > * {
+  white-space: nowrap;
+}
+
 #cityList {
   display: flex;
   flex-direction: row;
@@ -157,4 +161,20 @@ h1 {
 
 .cityListElement > button:hover {
   cursor: pointer;
+}
+
+#text_admin {
+  display: flex;
+  justify-content: space-between;
+}
+
+#admin > h3 {
+  text-align: center;
+  margin: 0;
+}
+
+#adminForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
 }
