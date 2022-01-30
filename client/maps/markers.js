@@ -85,15 +85,14 @@ function onFormSubmit() {
 
 // Recupere depuis le serveur la temperature et la luminosité d'un esp lorsqu'on clique sur son marker.
 function onEspMarkerClick(event) {
-  getRequest(`/esp/data?who=${event.sourceTarget.options.name}`).done(
+  getRequest(`/esp/latests?who=${event.sourceTarget.options.name}`).done(
     (resultat) => {
-      if (resultat.length != 0) {
-        event.sourceTarget.options.temp =
-          resultat[0].temp || event.sourceTarget.options.temp;
-        event.sourceTarget.options.light =
-          resultat[0].light || event.sourceTarget.options.light;
-        event.sourceTarget.setPopupContent(popUpHtml(event.sourceTarget));
-      }
+      let data = resultat[0];
+      event.sourceTarget.options.temp =
+        data.temp || event.sourceTarget.options.temp;
+      event.sourceTarget.options.light =
+        data.light || event.sourceTarget.options.light;
+      event.sourceTarget.setPopupContent(popUpHtml(event.sourceTarget));
     }
   );
 }
@@ -117,13 +116,12 @@ function addEspMarker(esp) {
 
   window.setInterval(
     () =>
-      getRequest(`/esp/data?who=${esp.who}`).done((res) => {
-        let data = res.shift();
+      getRequest(`/esp/latests?who=${esp.who}`).done((res) => {
         try {
           marker.setLatLng(
             new L.LatLng(
-              data.localisation.lat || marker._latlng.lat,
-              data.localisation.long || marker._latlng.long
+              res[0].localisation.lat || marker._latlng.lat,
+              res[0].localisation.long || marker._latlng.long
             )
           );
         } catch {

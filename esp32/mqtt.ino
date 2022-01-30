@@ -3,6 +3,7 @@ void setup_mqtt_server() {
   client.setServer(MQTT_SERVER.c_str(), MQTT_PORT);
   // set callback when publishes arrive for the subscribed topic
   client.setCallback(mqtt_pubcallback);
+  client.setBufferSize(2048);
 }
 
 /*============== MQTT CALLBACK ===================*/
@@ -26,7 +27,7 @@ void mqtt_connect() {
     Serial.print("Attempting MQTT connection...");
 
     // Attempt to connect => https://pubsubclient.knolleary.net/api
-    if (client.connect("deathstar")) {
+    if (client.connect("deathstar",NULL,NULL)) {
       Serial.println("connected");
     }
     else {
@@ -37,13 +38,10 @@ void mqtt_connect() {
       delay(5000); // Wait 5 seconds before retrying
     }
   }
-  // Inform the server of itself
-  String payload = "{\"who\": \"" + MAC +  "\"" + "}";
-  client.publish(TOPIC_CLIENT, payload.c_str());
 }
 
-void mqtt_publish(char* topic, String value) {
-  String payload = "{\"who\": \"" + MAC + "\", \"value\": " + value + "}";
+void mqtt_publish(char* topic, String temp, String light) {
+  String payload = "{\"who\": \"" + MAC + "\", \"temp\": " + temp + ", \"light\": " + light + ", \"localisation\": " + "{ \"lat\" : " +  43.617 + ", \"long\" : " + 7.064 + "}}";
   client.publish(topic, payload.c_str());
   Serial.print("Sent payload: ");
   Serial.println(payload);

@@ -41,7 +41,8 @@ function popUpHtml(marker) {
 }
 
 // Html d'un article de la liste des villes.
-const articleHtml = (city) =>
-  `<article class="cityListElement" id="cityListElement_${city}">${city}<button onclick="removeCityMarker('${city}')">&#10006;</button></article>`;
+function articleHtml(city) {
+  return `<article class="cityListElement" id="cityListElement_${city}">${city}<button onclick="removeCityMarker('${city}')">&#10006;</button></article>`;
+}
 
 initTab();

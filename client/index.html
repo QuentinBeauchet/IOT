@@ -48,21 +48,29 @@
       <div id="text_admin">
         <div id="text">
           <article>
-            Cette page permet de voir en temps réel les temperatures dans les
-            3000 villes les plus peulplés au monde.
+            Cette page permet de voir en temps réel les températures dans les
+            3000 villes les plus peuplées au monde. Il est possible de rajouter
+            des villes sur la carte pour connaitre leurs températures puis de
+            les supprimer si l'on change d'avis. Celles-ci sont automatiquement
+            sauvegardées dans le cache du navigateur.
           </article>
           <article>
-            Il est possible de rajouter des villes sur la carte pour connaitre
-            leurs temperatures puis de les supprimer si l'on change d'avis.
-            Celles ci sont automatiquement sauvegarder dans le cache.
+            Elle permet aussi de gérer une flotte d'esps, ceux-ci envoient leurs
+            données au serveur grâçe à des publications mqtt au topic
+            <i><b>iot/M1_2021/temp</b></i> sous la forme d'un JSON :
           </article>
           <article>
-            Elle permet aussi de gerer une flotte d'esps, ceux ci envoient leurs
-            données au serveur graçe a des publications mqtt au topic
-            <i><b>client</b></i> pour s'indentifier puis
-            <i><b>sensors/temp</b></i> et <i><b>sensors/light</b></i> pour
-            mettre a jour leurs valeurs qui sont alors visibles dans les
-            graphiques de Temperatures et de Luminosité.
+            <code>
+              {"who": "30:AE:A4:84:C3:5C", "temp": 24.19, "light": 297,
+              "localisation": { "lat" : 43.62, "long" : 7.06}}
+            </code>
+          </article>
+          <article>
+            Si la localisation est contient une latitude et une longitude valide
+            alors le point sera ajouté à la carte avec un marqueur orange.
+            Toutes les 10 secondes les graphiques sont mis à jour selon les
+            dernières données connues par le serveur. En se connectant en tant
+            qu'admin, on peut supprimer les données conservés par le serveur.
           </article>
         </div>
         <div id="admin">

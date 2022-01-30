@@ -1,6 +1,6 @@
 import dotenv from "dotenv";
 dotenv.config();
-import { resolve, parse, join } from "path";
+import { resolve, join } from "path";
 const __dirname = resolve();
 import { connect } from "mqtt";
 import { MongoClient } from "mongodb";
@@ -8,10 +8,6 @@ import express from "express";
 import bodyParser from "body-parser";
 const { urlencoded, json } = bodyParser;
 import fetch from "node-fetch";
-import fs from "fs";
-import bbox from "@turf/bbox";
-import booleanPointInPolygon from "@turf/boolean-point-in-polygon";
-import { point } from "@turf/helpers";
 
 // Topics MQTT
 const TOPIC_DATA = "iot/M1_2021/temp";
@@ -81,19 +77,11 @@ async function main() {
       // Parsing du message recu au format JSON
       try {
         message = JSON.parse(message);
-        var new_entry = {
-          date: Date.now(),
-          who: message.who,
-          temp: message.temp,
-          light: message.light,
-          localisation: {
-            lat: message.lat,
-            long: message.long,
-          },
-        };
+        console.log(message.localisation);
+        message.date = Date.now();
 
         // Ecriture dans la base de données MongoDB
-        dbo.collection("data").insertOne(new_entry);
+        dbo.collection("data").insertOne(message);
       } catch {
         console.error("Le message n'est pas un json");
       }
@@ -140,7 +128,7 @@ app.get("/", function (req, res) {
 });
 
 // Request to esp/light or esp/temp.
-app.get("/esp/data", function (req, res) {
+app.get("/esp/latests", function (req, res) {
   showRequest(req);
 
   // Recupere les informations de la base de données MongoDB.
@@ -210,27 +198,6 @@ app.get("/admin", function (req, res) {
   } else {
     res.sendStatus(403);
   }
-});
-
-var geoJson;
-fs.readFile("client/maps/grassePoly.json", (err, data) => {
-  let json = JSON.parse(data);
-  geoJson = json;
-});
-
-app.get("/random/localisation", function (req, res) {
-  let box = bbox(geoJson);
-  var newLoc = () => {
-    return {
-      lat: box[1] + Math.random() * (box[3] - box[1]),
-      long: box[0] + Math.random() * (box[2] - box[0]),
-    };
-  };
-  var loc = newLoc();
-  while (!booleanPointInPolygon(point([loc.long, loc.lat]), geoJson)) {
-    loc = newLoc();
-  }
-  res.json(loc);
 });
 
 app.get("*", function (req, res) {

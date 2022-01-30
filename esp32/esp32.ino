@@ -29,14 +29,10 @@ void loop () {
   static uint32_t tick = 0;
   int32_t period = 10 * 1000l; // Publication period
 
-  if ( millis() - tick < period) {
-    // Process MQTT ... obligatoire une fois par loop()
-    client.loop();
-  }
-  else {
+  if ( millis() - tick > period) {
     tick = millis();
-
-    mqtt_publish(TOPIC_TEMP,get_temp());
-    mqtt_publish(TOPIC_LIGHT,get_light());
+    mqtt_publish(TOPIC_DATA,get_temp(),get_light());
   }
+
+  client.loop();
 }

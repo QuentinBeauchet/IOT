@@ -60,7 +60,6 @@ function get_samples(path_on_node, chartTemp, chartLight, esp) {
     let tempData = [];
     let lightData = [];
     resultat.forEach(function (element) {
-      console.log(element, element.date, new Date(element.date));
       tempData.push([element.date, element.temp]);
       lightData.push([element.date, element.light]);
     });
@@ -75,17 +74,20 @@ const refreshT = 10000;
 getRequest("/esps").done((Esps) => {
   var { chart1, chart2 } = initCharts(Esps);
   // Initilalisation du rafraichissemnt des requetes GET des données.
+
   for (var i = 0; i < Esps.length; i++) {
     let esp = Esps[i];
 
     window.setInterval(
       get_samples,
       refreshT,
-      "/esp/data",
+      "/esp/latests",
       chart1.series[i],
       chart2.series[i],
       esp.who
     );
+
+    get_samples("/esp/latests", chart1.series[i], chart2.series[i], esp.who);
 
     addEspMarker(esp);
   }
