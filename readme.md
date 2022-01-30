@@ -3,3 +3,5 @@
 - MONGOUSERNAME = L'dentififiant MongoDB
 - MONGOPASSWORD = Le mot de passe MongoDB
 - openWeatherAPIKey = La clé api d'openWeather
+
+# Le site est deployé sur https://espluciole.herokuapp.com/
